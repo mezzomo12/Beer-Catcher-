@@ -269,7 +269,7 @@ def draw_death_screen():
         date = match.get("date", "Unknown Date")
         match_text = fonte.render(f"{date} - {name}: {score} pontos", True, BRANCO)
         tela.blit(match_text, (tamanho[0] // 2 - match_text.get_width() // 2, y_offset))
-        y_offset += 40
+        y_offset += 40 
 
     pygame.display.flip()
     return play_again_button_rect, quit_button_rect
