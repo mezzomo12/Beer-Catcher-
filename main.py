@@ -1,13 +1,107 @@
 import pygame
 import random
 from recursos.funcoes import *
+import tkinter as tk
+from tkinter import messagebox
+from recursos.funcoes import inicializarBancoDeDados
+from recursos.funcoes import escreverDados
+import json
 
 pygame.init()
 
 # Screen setup
 tamanho = 1000, 700
 tela = pygame.display.set_mode(tamanho)
-pygame.display.set_caption("Bullet Hell!")
+pygame.display.set_caption("Beer Catcher!")
+fonte = pygame.font.SysFont("arial", 36)
+
+# Colors
+BRANCO = (255, 255, 255)
+PRETO = (0, 0, 0)
+CINZA = (200, 200, 200)
+
+# Menu buttons
+button_width, button_height = 200, 50
+play_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2 - 100), (button_width, button_height))
+quit_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2), (button_width, button_height))
+
+# Input box for name
+input_box = pygame.Rect(tamanho[0] // 2 - 150, tamanho[1] // 2 + 100, 300, 50)
+active = False
+player_name = ""
+
+def draw_menu():
+    tela.fill(PRETO)
+    title_text = fonte.render("Beer Catcher!", True, BRANCO)
+    tela.blit(title_text, (tamanho[0] // 2 - title_text.get_width() // 2, 100))
+
+    pygame.draw.rect(tela, CINZA, play_button_rect)
+    play_text = fonte.render("Play", True, PRETO)
+    tela.blit(play_text, (play_button_rect.x + button_width // 2 - play_text.get_width() // 2, play_button_rect.y + button_height // 2 - play_text.get_height() // 2))
+
+    pygame.draw.rect(tela, CINZA, quit_button_rect)
+    quit_text = fonte.render("Quit", True, PRETO)
+    tela.blit(quit_text, (quit_button_rect.x + button_width // 2 - quit_text.get_width() // 2, quit_button_rect.y + button_height // 2 - quit_text.get_height() // 2))
+
+    pygame.display.flip()
+
+def draw_name_input():
+    tela.fill(PRETO)
+    prompt_text = fonte.render("Enter your name:", True, BRANCO)
+    tela.blit(prompt_text, (tamanho[0] // 2 - prompt_text.get_width() // 2, tamanho[1] // 2 - 50))
+
+    pygame.draw.rect(tela, BRANCO, input_box, 2)
+    name_text = fonte.render(player_name, True, BRANCO)
+    tela.blit(name_text, (input_box.x + 10, input_box.y + 10))
+
+    pygame.display.flip()
+
+# Menu loop
+menu_running = True
+while menu_running:
+    draw_menu()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if play_button_rect.collidepoint(event.pos):
+                # Go to name input screen
+                while True:
+                    draw_name_input()
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_RETURN and player_name.strip():
+                                menu_running = False
+                                break
+                            elif event.key == pygame.K_BACKSPACE:
+                                player_name = player_name[:-1]
+                            else:
+                                player_name += event.unicode
+                    if not menu_running:
+                        break
+            elif quit_button_rect.collidepoint(event.pos):
+                pygame.quit()
+                sys.exit()
+
+import pygame
+import random
+from recursos.funcoes import *
+import tkinter as tk
+from tkinter import messagebox
+from recursos.funcoes import inicializarBancoDeDados
+from recursos.funcoes import escreverDados
+import json
+
+pygame.init()
+
+# Screen setup
+tamanho = 1000, 700
+tela = pygame.display.set_mode(tamanho)
+pygame.display.set_caption("Beer Catcher!")
 relogio = pygame.time.Clock()
 
 # Load assets
@@ -24,9 +118,6 @@ som_pontos.set_volume(0.2)
 pygame.mixer.music.load("assets/musica.mp3")
 pygame.mixer.music.play(-1)  # Loop background music
 
-# Load play button
-botao_jogar = pygame.image.load("assets/botao_jogar.png")
-botao_jogar = pygame.transform.scale(botao_jogar, (300, 100))  # Scale button
 
 # Character setup
 posicaoXPersonagem = 500
@@ -60,27 +151,72 @@ velocidadeRepolho = 4
 pontos = 0
 fonte = pygame.font.SysFont("arial", 36)
 
-# Function to display the menu
-def menu():
-    while True:
-        tela.fill((0, 0, 0))  # Black background
-        tela.blit(botao_jogar, (tamanho[0] // 2 - 150, tamanho[1] // 2 - 50))  # Center the button
+def show_score_log():
+    """Display the score log in a tkinter window."""
+    try:
+        with open("scores.json", "r") as file:
+            scores = json.load(file)
+    except FileNotFoundError:
+        scores = []
 
-        for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            if evento.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                botao_rect = botao_jogar.get_rect(topleft=(tamanho[0] // 2 - 150, tamanho[1] // 2 - 50))
-                if botao_rect.collidepoint(mouse_pos):
-                    return  # Start the game
+    # Create tkinter window
+    root = tk.Tk()
+    root.title("Tela da Morte")
+    root.geometry("400x300")
 
-        pygame.display.flip()
-        relogio.tick(60)
+    # Add a title label
+    title_label = tk.Label(root, text="Log das Partidas", font=("Arial", 16))
+    title_label.pack(pady=10)
 
-# Show the menu
-menu()
+    # Create a text widget to display scores
+    text_widget = tk.Text(root, wrap=tk.WORD, font=("Arial", 12))
+    text_widget.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
+
+    # Populate the text widget with scores
+    for score_entry in scores:
+        name = score_entry.get("name", "Unknown")
+        score = score_entry.get("score", 0)
+        date = score_entry.get("date", "Unknown Date")
+        text_widget.insert(tk.END, f"Pontos: {score} na data: {date} - Nickname: {name}\n")
+
+    # Disable editing in the text widget
+    text_widget.config(state=tk.DISABLED)
+
+    # Run the tkinter main loop
+    root.mainloop()
+
+# Modify the save_score function to include the current date
+def save_score(name, score):
+    """Save the player's name, score, and date to a JSON file."""
+    try:
+        with open("scores.json", "r") as file:
+            scores = json.load(file)
+    except FileNotFoundError:
+        scores = []
+
+    from datetime import datetime
+    current_date = datetime.now().strftime("%d/%m/%Y")
+
+    scores.append({"name": name, "score": score, "date": current_date})
+
+    with open("scores.json", "w") as file:
+        json.dump(scores, file, indent=4)
+
+paused = False
+
+def draw_pause_screen():
+    """Draw the pause screen with a resume button."""
+    tela.fill(PRETO)
+    pause_text = fonte.render("Game Paused", True, BRANCO)
+    tela.blit(pause_text, (tamanho[0] // 2 - pause_text.get_width() // 2, tamanho[1] // 2 - 100))
+
+    resume_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2), (button_width, button_height))
+    pygame.draw.rect(tela, CINZA, resume_button_rect)
+    resume_text = fonte.render("Resume", True, PRETO)
+    tela.blit(resume_text, (resume_button_rect.x + button_width // 2 - resume_text.get_width() // 2, resume_button_rect.y + button_height // 2 - resume_text.get_height() // 2))
+
+    pygame.display.flip()
+    return resume_button_rect
 
 # Main game loop
 while True:
@@ -89,16 +225,27 @@ while True:
             pygame.quit()
             exit()
         if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_RIGHT:
-                movimentoXPersonagem = velocidadePersonagem
-                personagem = personagem_original
-            if evento.key == pygame.K_LEFT:
-                movimentoXPersonagem = -velocidadePersonagem
-                personagem = pygame.transform.flip(personagem_original, True, False)
+            if evento.key == pygame.K_SPACE:
+                paused = not paused
+            if not paused:
+                if evento.key == pygame.K_RIGHT:
+                    movimentoXPersonagem = velocidadePersonagem
+                    personagem = personagem_original
+                if evento.key == pygame.K_LEFT:
+                    movimentoXPersonagem = -velocidadePersonagem
+                    personagem = pygame.transform.flip(personagem_original, True, False)
+            if paused and evento.type == pygame.MOUSEBUTTONDOWN:
+                if resume_button_rect.collidepoint(evento.pos):
+                    paused = False
         if evento.type == pygame.KEYUP:
             if evento.key in [pygame.K_RIGHT, pygame.K_LEFT]:
                 movimentoXPersonagem = 0
 
+    if paused:
+        resume_button_rect = draw_pause_screen()
+        continue
+
+    # Game logic and drawing
     posicaoXPersonagem += movimentoXPersonagem
 
     if posicaoXPersonagem < 0:
@@ -135,23 +282,27 @@ while True:
             posicaoYPersonagem < repolhos[i][1] + alturaRepolho and
             posicaoYPersonagem + alturaPersonagem > repolhos[i][1]
         ):
-            print("Game Over!")
+            save_score(player_name, pontos)
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showinfo("Game Over", f"Game Over! {player_name}, your score is {pontos}.")
+            root.destroy()
+
+            # Show the score log
+            show_score_log()
+
             pygame.quit()
             exit()
 
-    # Drawing
     tela.blit(fundoJogo, (0, 0))
     tela.blit(personagem, (posicaoXPersonagem, posicaoYPersonagem))
 
-    # Draw all cervejas
     for x, y in cervejas:
         tela.blit(cerveja, (x, y))
 
-    # Draw all repolhos
     for x, y in repolhos:
         tela.blit(repolho, (x, y))
 
-    # Display points
     textoPontos = fonte.render(f"Pontos: {pontos}", True, (255, 255, 255))
     tela.blit(textoPontos, (10, 10))
 
