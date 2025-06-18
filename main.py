@@ -52,6 +52,46 @@ def draw_name_input():
 
     pygame.display.flip()
 
+def draw_welcome_screen(player_name):
+    tela.fill(PRETO)
+    welcome_text = fonte.render(f"Bem-vindo(a) {player_name}!", True, BRANCO)
+    instructions_line1 = fonte.render(
+        "Esse jogo é do estilo food drop.",
+        True,
+        BRANCO,
+    )
+    instructions_line2 = fonte.render(
+        "Mova-se para os lados com as setas do teclado",
+        True,
+        BRANCO,
+    )
+    instructions_line3 = fonte.render(
+        "e pegue o máximo de cervejas que conseguir, mas evite os repolhos.",
+        True,
+        BRANCO,
+    )
+
+    tela.blit(welcome_text, (tamanho[0] // 2 - welcome_text.get_width() // 2, tamanho[1] // 2 - 200))
+    tela.blit(instructions_line1, (tamanho[0] // 2 - instructions_line1.get_width() // 2, tamanho[1] // 2 - 100))
+    tela.blit(instructions_line2, (tamanho[0] // 2 - instructions_line2.get_width() // 2, tamanho[1] // 2 - 50))
+    tela.blit(instructions_line3, (tamanho[0] // 2 - instructions_line3.get_width() // 2, tamanho[1] // 2))
+
+    play_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2 + 100), (button_width, button_height))
+    pygame.draw.rect(tela, CINZA, play_button_rect)
+    play_text = fonte.render("Play", True, PRETO)
+    tela.blit(play_text, (play_button_rect.x + button_width // 2 - play_text.get_width() // 2, play_button_rect.y + button_height // 2 - play_text.get_height() // 2))
+
+    pygame.display.flip()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if play_button_rect.collidepoint(event.pos):
+                    return  # Exit the welcome screen and start the game
+
 menu_running = True
 while menu_running:
     draw_menu()
@@ -70,6 +110,7 @@ while menu_running:
                         if event.type == pygame.KEYDOWN:
                             if event.key == pygame.K_RETURN and player_name.strip():
                                 menu_running = False
+                                draw_welcome_screen(player_name)  # Show welcome screen
                                 break
                             elif event.key == pygame.K_BACKSPACE:
                                 player_name = player_name[:-1]
@@ -199,40 +240,36 @@ def draw_pause_screen():
     return resume_button_rect
 
 def draw_death_screen():
-    """Draw the death screen with play again, quit buttons, and last 5 matches."""
     tela.fill(PRETO)
     death_screen = pygame.image.load("assets/tela_morte.png")
     death_screen = pygame.transform.scale(death_screen, tamanho)
     tela.blit(death_screen, (0, 0))
 
-    # Play Again button
     play_again_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2 - 100), (button_width, button_height))
     pygame.draw.rect(tela, CINZA, play_again_button_rect)
     play_again_text = fonte.render("Play Again", True, PRETO)
     tela.blit(play_again_text, (play_again_button_rect.x + button_width // 2 - play_again_text.get_width() // 2, play_again_button_rect.y + button_height // 2 - play_again_text.get_height() // 2))
 
-    # Quit button
     quit_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2), (button_width, button_height))
     pygame.draw.rect(tela, CINZA, quit_button_rect)
     quit_text = fonte.render("Quit", True, PRETO)
     tela.blit(quit_text, (quit_button_rect.x + button_width // 2 - quit_text.get_width() // 2, quit_button_rect.y + button_height // 2 - quit_text.get_height() // 2))
 
-    # Display last 5 matches
     try:
         with open("scores.json", "r") as file:
             scores = json.load(file)
     except FileNotFoundError:
         scores = []
 
-    last_matches = scores[-5:]  # Get the last 5 matches
-    y_offset = tamanho[1] // 2 + 100  # Start below the buttons
+    last_matches = scores[-5:]
+    y_offset = tamanho[1] // 2 + 100
     for match in last_matches:
         name = match.get("name", "Unknown")
         score = match.get("score", 0)
         date = match.get("date", "Unknown Date")
         match_text = fonte.render(f"{date} - {name}: {score} pontos", True, BRANCO)
         tela.blit(match_text, (tamanho[0] // 2 - match_text.get_width() // 2, y_offset))
-        y_offset += 40  # Move down for the next match
+        y_offset += 40
 
     pygame.display.flip()
     return play_again_button_rect, quit_button_rect
@@ -260,15 +297,13 @@ def reset_game():
 
     pygame.mixer.music.play(-1)
 
-# Load the barril image
 barril = pygame.image.load("assets/barril.png")
 barril_original = pygame.transform.scale(barril, (100, 100))  # Initial size
 barril_rect = barril_original.get_rect()
 barril_rect.bottomright = (tamanho[0] - 20, tamanho[1] - 20)
 
-# Variables for pulsing effect
 pulse_scale = 100
-pulse_direction = 1  # 1 for increasing size, -1 for decreasing size
+pulse_direction = 1
 pulse_speed = 1
 
 while True:
@@ -356,7 +391,6 @@ while True:
                     continue
                 break
 
-    # Pulsing effect for barril
     pulse_scale += pulse_direction * pulse_speed
     if pulse_scale >= 120 or pulse_scale <= 80:
         pulse_direction *= -1
@@ -373,10 +407,8 @@ while True:
     for x, y in repolhos:
         tela.blit(repolho, (x, y))
 
-    # Draw the pulsing barril
     tela.blit(barril_scaled, barril_rect)
 
-    # Render score and pause instruction
     textoPontos = fonte.render(f"Pontos: {pontos}", True, (255, 255, 255))
     tela.blit(textoPontos, (10, 10))
 
