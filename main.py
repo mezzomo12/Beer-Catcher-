@@ -218,6 +218,52 @@ def draw_pause_screen():
     pygame.display.flip()
     return resume_button_rect
 
+def draw_death_screen():
+    """Draw the death screen with play again and quit buttons."""
+    tela.fill(PRETO)
+    death_screen = pygame.image.load("assets/tela_morte.png")
+    death_screen = pygame.transform.scale(death_screen, tamanho)
+    tela.blit(death_screen, (0, 0))
+
+    # Play Again button
+    play_again_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2 - 100), (button_width, button_height))
+    pygame.draw.rect(tela, CINZA, play_again_button_rect)
+    play_again_text = fonte.render("Play Again", True, PRETO)
+    tela.blit(play_again_text, (play_again_button_rect.x + button_width // 2 - play_again_text.get_width() // 2, play_again_button_rect.y + button_height // 2 - play_again_text.get_height() // 2))
+
+    # Quit button
+    quit_button_rect = pygame.Rect((tamanho[0] // 2 - button_width // 2, tamanho[1] // 2), (button_width, button_height))
+    pygame.draw.rect(tela, CINZA, quit_button_rect)
+    quit_text = fonte.render("Quit", True, PRETO)
+    tela.blit(quit_text, (quit_button_rect.x + button_width // 2 - quit_text.get_width() // 2, quit_button_rect.y + button_height // 2 - quit_text.get_height() // 2))
+
+    pygame.display.flip()
+    return play_again_button_rect, quit_button_rect
+
+def reset_game():
+    """Reset all game variables and objects to their initial state."""
+    global pontos, posicaoXPersonagem, posicaoYPersonagem, movimentoXPersonagem, velocidadePersonagem, cervejas, repolhos
+
+    pontos = 0
+    posicaoXPersonagem = 500
+    posicaoYPersonagem = tamanho[1] - 180
+    movimentoXPersonagem = 0
+    velocidadePersonagem = 10
+
+    cervejas = []
+    for _ in range(num_cervejas):
+        x = random.randint(0, tamanho[0] - larguraCerveja)
+        y = random.randint(-500, -80)
+        cervejas.append([x, y])
+
+    repolhos = []
+    for _ in range(num_repolhos):
+        x = random.randint(0, tamanho[0] - larguraRepolho)
+        y = random.randint(-500, -80)
+        repolhos.append([x, y])
+
+    pygame.mixer.music.play(-1)  # Restart background music
+
 # Main game loop
 while True:
     for evento in pygame.event.get():
@@ -288,11 +334,23 @@ while True:
             messagebox.showinfo("Game Over", f"Game Over! {player_name}, your score is {pontos}.")
             root.destroy()
 
-            # Show the score log
-            show_score_log()
-
-            pygame.quit()
-            exit()
+            # Show the death screen
+            while True:
+                play_again_button_rect, quit_button_rect = draw_death_screen()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        exit()
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if play_again_button_rect.collidepoint(event.pos):
+                            reset_game()  # Reset the game
+                            break
+                        elif quit_button_rect.collidepoint(event.pos):
+                            pygame.quit()
+                            exit()
+                else:
+                    continue
+                break
 
     tela.blit(fundoJogo, (0, 0))
     tela.blit(personagem, (posicaoXPersonagem, posicaoYPersonagem))
